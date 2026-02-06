@@ -1,0 +1,121 @@
+import { useState } from "react";
+import type { PosterContent } from "@/types/poster";
+
+type Props = {
+  content: PosterContent;
+  onChange: (next: PosterContent) => void;
+  onDownload: () => void | Promise<void>;
+  onGeneratePortrait?: () => void | Promise<void>;
+  isExporting: boolean;
+  errors?: { name?: string; quote?: string; export?: string };
+};
+
+export default function QuoteInputPanel({
+  content,
+  onChange,
+  onDownload,
+  onGeneratePortrait,
+  isExporting,
+  errors,
+}: Props) {
+  const [showHint, setShowHint] = useState(false);
+  const [isGeneratingPortrait, setIsGeneratingPortrait] = useState(false);
+
+  const handleGeneratePortrait = async () => {
+    if (!onGeneratePortrait || !content.name.trim()) return;
+    setIsGeneratingPortrait(true);
+    try {
+      await onGeneratePortrait();
+    } finally {
+      setIsGeneratingPortrait(false);
+    }
+  };
+
+  return (
+    <section className="w-[640px] rounded-xl border border-zinc-200/80 bg-white p-6 shadow-sm">
+      <div className="space-y-5">
+        <div className="space-y-2">
+          <label htmlFor="name" className="text-sm font-medium leading-none text-zinc-700">
+            名人
+          </label>
+          <input
+            id="name"
+            name="name"
+            required
+            value={content.name}
+            maxLength={60}
+            placeholder="例如：Albert Einstein"
+            onChange={(e) => onChange({ ...content, name: e.target.value })}
+            onFocus={() => setShowHint(true)}
+            onBlur={() => setShowHint(false)}
+            aria-invalid={Boolean(errors?.name)}
+            aria-describedby={errors?.name ? "name-error" : undefined}
+            className="flex h-10 w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none transition placeholder:text-zinc-400 focus-visible:ring-2 focus-visible:ring-zinc-950/10 focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:opacity-50"
+          />
+          {showHint && !content.name.trim() && (
+            <div className="text-xs text-zinc-500">
+              输入名人名称，点击下方按钮，生成肖像
+            </div>
+          )}
+          {errors?.name && (
+            <div id="name-error" role="alert" className="text-xs text-red-600">
+              {errors.name}
+            </div>
+          )}
+        </div>
+
+        <div className="space-y-2">
+          <label htmlFor="quote" className="text-sm font-medium leading-none text-zinc-700">
+            名言
+          </label>
+          <textarea
+            id="quote"
+            name="quote"
+            required
+            value={content.quote}
+            maxLength={500}
+            placeholder="请输入名言内容…"
+            rows={7}
+            onChange={(e) => onChange({ ...content, quote: e.target.value })}
+            aria-invalid={Boolean(errors?.quote)}
+            aria-describedby={errors?.quote ? "quote-error" : undefined}
+            className="w-full resize-none rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none transition placeholder:text-zinc-400 focus-visible:ring-2 focus-visible:ring-zinc-950/10 focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:opacity-50"
+          />
+          {errors?.quote && (
+            <div id="quote-error" role="alert" className="text-xs text-red-600">
+              {errors.quote}
+            </div>
+          )}
+        </div>
+
+        <button
+          type="button"
+          onClick={handleGeneratePortrait}
+          disabled={isGeneratingPortrait || !content.name.trim()}
+          aria-label="AI 肖像生成"
+          aria-busy={isGeneratingPortrait}
+          className="inline-flex h-10 w-full items-center justify-center rounded-md bg-zinc-900 px-4 text-sm font-medium text-white transition hover:bg-zinc-900/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950/20 focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:pointer-events-none disabled:opacity-50"
+        >
+          {isGeneratingPortrait ? "生成中…" : "生成"}
+        </button>
+
+        <button
+          type="button"
+          onClick={onDownload}
+          disabled={isExporting}
+          aria-label="下载名言卡片图片"
+          aria-busy={isExporting}
+          className="inline-flex h-10 w-full items-center justify-center rounded-md bg-zinc-100 px-4 text-sm font-medium text-zinc-900 transition hover:bg-zinc-100/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-950/20 focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:pointer-events-none disabled:opacity-50"
+        >
+          {isExporting ? "生成中…" : "下载"}
+        </button>
+
+        {errors?.export && (
+          <div role="alert" className="text-xs text-red-600">
+            {errors.export}
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
