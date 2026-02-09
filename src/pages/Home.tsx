@@ -13,6 +13,14 @@ const initialContent: PosterContent = {
   description: "",
 };
 
+const createPortraitPrompt = (name: string, mood: string) =>
+  `A high-definition, realistic chest-up close-up portrait of ${name}, with a ${mood} expression. Camera is slightly closer for stronger visual impact; head-and-shoulders framing with the face larger in frame. Camera angle: 15-degree left profile (subject turned 15 degrees to their left), natural three-quarter view, not frontal. The subject is fully clothed, wearing attire that matches the person’s commonly recognized public image (era-appropriate and profession-appropriate). No bare shoulders, no exposed chest, no bare skin below the neck. The clothing is clearly visible. Cinematic studio lighting, Rembrandt lighting on the face, high contrast. 8k resolution, clean and sophisticated aesthetic. The subject must match ${name} and not be a cartoon, robot, signage, poster, or text-only image.`;
+
+const createInitialPortraitUrl = (prompt: string) => {
+  const encodedPrompt = encodeURIComponent(prompt);
+  return `https://copilot-cn.bytedance.net/api/ide/v1/text_to_image?prompt=${encodedPrompt}&image_size=portrait_4_3`;
+};
+
 type QuoteInputPanelProps = {
   content: PosterContent;
   onChange: (next: PosterContent) => void;
@@ -28,8 +36,54 @@ export default function Home() {
   const [content, setContent] = useState<PosterContent>(initialContent);
   const exportRef = useRef<HTMLDivElement | null>(null);
   const [isExporting, setIsExporting] = useState(false);
-  const [portraitUrl, setPortraitUrl] = useState<string>("https://copilot-cn.bytedance.net/api/ide/v1/text_to_image?prompt=%5BRight%20Side%5D%3A%20A%20high-definition%2C%20realistic%20chest-up%20portrait%20of%20Albert%20Einstein%2C%20framed%20from%20the%20chest%20up%20to%20focus%20on%20the%20face%20and%20shoulders.%20Looking%20towards%20the%20camera%20with%20a%20calm%20expression.%20%5BLighting%5D%3A%20Cinematic%20studio%20lighting%2C%20Rembrandt%20lighting%20on%20the%20face%2C%20high%20contrast.%208k%20resolution%2C%20clean%20and%20sophisticated%20aesthetic.&image_size=portrait_4_3");
+  const [portraitUrl, setPortraitUrl] = useState<string>(() =>
+    createInitialPortraitUrl(createPortraitPrompt(initialContent.name, "calm"))
+  );
+  const [exportPortraitUrl, setExportPortraitUrl] = useState<string | null>(null);
   const [errors, setErrors] = useState<{ name?: string; quote?: string; export?: string }>({});
+
+  const getExportPortraitUrl = (url?: string) => {
+    if (!url) return null;
+    try {
+      const parsed = new URL(url);
+      if (parsed.origin !== window.location.origin) {
+        return `/api/image?url=${encodeURIComponent(url)}`;
+      }
+      return url;
+    } catch {
+      return null;
+    }
+  };
+
+  const waitForImagesLoaded = async (node: HTMLElement) => {
+    const images = Array.from(node.querySelectorAll("img"));
+    if (images.length === 0) return;
+    await Promise.all(
+      images.map(
+        (img) =>
+          new Promise<void>((resolve) => {
+            if (img.complete && img.naturalWidth > 0) {
+              resolve();
+              return;
+            }
+            const cleanup = () => {
+              img.removeEventListener("load", onLoad);
+              img.removeEventListener("error", onError);
+            };
+            const onLoad = () => {
+              cleanup();
+              resolve();
+            };
+            const onError = () => {
+              cleanup();
+              resolve();
+            };
+            img.addEventListener("load", onLoad);
+            img.addEventListener("error", onError);
+          })
+      )
+    );
+  };
 
   const handleDownload = async () => {
     const result = validatePosterContent(content);
@@ -46,7 +100,11 @@ export default function Home() {
 
     setErrors({});
     setIsExporting(true);
+    const resolvedExportPortraitUrl = getExportPortraitUrl(portraitUrl);
+    setExportPortraitUrl(resolvedExportPortraitUrl);
     try {
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+      await waitForImagesLoaded(node);
       const dataUrl = await toPng(node, { cacheBust: true, pixelRatio: 1 });
       const a = document.createElement("a");
       a.href = dataUrl;
@@ -58,6 +116,7 @@ export default function Home() {
       setErrors({ export: "生成失败，请重试" });
     } finally {
       setIsExporting(false);
+      setExportPortraitUrl(null);
     }
   };
 
@@ -67,7 +126,7 @@ export default function Home() {
     try {
       const name = content.name.trim();
       const mood = "calm";
-      const prompt = `A high-definition, realistic chest-up portrait of ${name}, looking towards the camera with a ${mood} expression. Cinematic studio lighting, Rembrandt lighting on the face, high contrast. 8k resolution, clean and sophisticated aesthetic.`;
+      const prompt = createPortraitPrompt(name, mood);
       
       const newPortraitUrl = await generatePortrait(prompt);
       setPortraitUrl(newPortraitUrl);
@@ -79,16 +138,16 @@ export default function Home() {
 
   return (
     <main className="min-h-dvh bg-zinc-50 text-zinc-900">
-      <div className="mx-auto max-w-[1400px] px-6 py-12">
-        <header className="mb-8 flex flex-col items-center gap-2 text-center">
-          <p className="text-sm font-medium text-zinc-500">Quote Card Builder</p>
-          <h1 className="text-3xl font-semibold tracking-tight text-zinc-900">名言卡片生成器</h1>
+      <div className="mx-auto max-w-[1400px] px-4 pb-[calc(40px+env(safe-area-inset-bottom))] pt-8 sm:px-6 sm:py-12">
+        <header className="mb-6 flex flex-col items-center gap-2 text-center sm:mb-8">
+          <p className="text-xs font-medium text-zinc-500 sm:text-sm">Quote Card Builder</p>
+          <h1 className="text-2xl font-semibold tracking-tight text-zinc-900 sm:text-3xl">名言卡片生成器</h1>
         </header>
 
-        <div className="flex flex-wrap justify-center gap-[24px]">
-          <section className="w-[640px] rounded-xl border border-zinc-200/80 bg-white p-6 shadow-sm">
+        <div className="flex flex-col items-center gap-5 sm:gap-6">
+          <section className="w-full max-w-[640px] rounded-xl border border-zinc-200/80 bg-white p-4 shadow-sm sm:p-6">
             <div className="text-sm font-medium text-zinc-600">实时预览</div>
-            <div className="mt-5">
+            <div className="mt-4 sm:mt-5">
               <QuotePosterPreview content={content} portraitUrl={portraitUrl} />
             </div>
           </section>
@@ -109,7 +168,7 @@ export default function Home() {
 
       <div className="fixed left-[-10000px] top-0">
         <div ref={exportRef} style={{ width: 1200 }}>
-          <QuotePosterPreview content={content} portraitUrl={portraitUrl} />
+          <QuotePosterPreview content={content} portraitUrl={exportPortraitUrl ?? portraitUrl} />
         </div>
       </div>
     </main>

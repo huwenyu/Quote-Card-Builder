@@ -21,12 +21,36 @@ export async function generatePortrait(prompt: string): Promise<string> {
 
   if (!response.ok) {
     const errorText = await response.text();
-    if (response.status === 429) {
-      const fallbackUrl = createPollinationsFallback(prompt);
-      if (fallbackUrl) {
-        return fallbackUrl;
-      }
+    const shouldFallback =
+      response.status === 429 ||
+      response.status === 401 ||
+      response.status === 403 ||
+      response.status >= 500;
+    if (!shouldFallback) {
+      throw new Error(`API 调用失败: ${response.status} ${response.statusText} ${errorText}`);
     }
+
+    try {
+      const jimengRes = await fetch("/api/jimeng", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt }),
+      });
+      if (jimengRes.ok) {
+        const jimengJson: any = await jimengRes.json();
+        if (jimengJson?.image_base64) {
+          return `data:image/png;base64,${jimengJson.image_base64}`;
+        }
+        if (jimengJson?.image_url) {
+          return jimengJson.image_url;
+        }
+      }
+    } catch {
+      // ignore
+    }
+
+    const fallbackUrl = createCopilotFallback(prompt);
+    if (fallbackUrl) return fallbackUrl;
     throw new Error(`API 调用失败: ${response.status} ${response.statusText} ${errorText}`);
   }
 
@@ -48,13 +72,11 @@ export async function generatePortrait(prompt: string): Promise<string> {
   return `data:image/png;base64,${base64Image}`;
 }
 
-function createPollinationsFallback(prompt: string) {
+function createCopilotFallback(prompt: string) {
   try {
-    const enhancedPrompt = `cinematic portrait of ${prompt}, high quality, 8k, photorealistic, dramatic lighting`;
-    const encodedPrompt = encodeURIComponent(enhancedPrompt);
-    const randomSeed = Math.floor(Math.random() * 100000);
+    const encodedPrompt = encodeURIComponent(prompt);
     const timestamp = new Date().getTime();
-    return `https://image.pollinations.ai/prompt/${encodedPrompt}?width=768&height=1024&seed=${randomSeed}&model=flux&nologo=true&t=${timestamp}`;
+    return `https://copilot-cn.bytedance.net/api/ide/v1/text_to_image?prompt=${encodedPrompt}&image_size=portrait_4_3&t=${timestamp}`;
   } catch {
     return "";
   }

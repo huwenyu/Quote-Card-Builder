@@ -119,23 +119,23 @@ export default function QuotePosterPreview({
       resizeObserver.disconnect();
       cancelAnimationFrame(rafId);
     };
-  }, [quote, name, description, isEmpty, maxFontSize]);
+  }, [quote, description, isEmpty, maxFontSize]);
 
   const authorSize = Math.max(11, Math.min(14, fontSize * 0.32));
   const descSize = Math.max(10, Math.min(12, fontSize * 0.27));
 
   return (
-    <div className="relative aspect-video w-full overflow-hidden rounded-2xl bg-black shadow-[0_18px_60px_rgba(0,0,0,0.35)]">
+    <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-black shadow-[0_18px_60px_rgba(0,0,0,0.35)] sm:rounded-2xl">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_30%,rgba(255,255,255,0.06),transparent_55%),radial-gradient(circle_at_80%_70%,rgba(255,255,255,0.04),transparent_55%)]" />
 
       <div className="absolute inset-0 grid grid-cols-[1.15fr_0.85fr]">
         <div
           ref={containerRef}
-          className="flex h-full items-center justify-center overflow-hidden p-6"
+          className="flex h-full items-center justify-center overflow-hidden p-4 sm:p-6"
         >
           <div
             ref={textRef}
-            className="w-full max-w-[36ch] overflow-hidden text-left"
+            className="w-full max-w-[30ch] overflow-hidden text-left sm:max-w-[36ch]"
           >
             <div
               className={
@@ -153,7 +153,7 @@ export default function QuotePosterPreview({
             </div>
 
             {!isEmpty && (
-              <div className="mt-6">
+              <div className="mt-4 sm:mt-6">
                 <div
                   className="font-sans font-semibold tracking-[0.22em] text-white"
                   style={{ fontSize: `${authorSize}px` }}
