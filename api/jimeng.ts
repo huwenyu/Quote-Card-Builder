@@ -51,13 +51,22 @@ function signRequest(body: string, query: Record<string, string>, accessKey: str
   const signedHeaders = "content-type;host;x-content-sha256;x-date";
   const canonicalRequest = `POST\n/\n${canonicalQuery}\n${canonicalHeaders}\n${signedHeaders}\n${payloadHash}`;
   const credentialScope = `${shortDate}/${REGION}/${SERVICE}/request`;
-  const stringToSign = `HMAC-SHA256\n${xDate}\n${credentialScope}\n${hashSha256(canonicalRequest)}`;
+  const canonicalRequestHash = hashSha256(canonicalRequest);
+  const stringToSign = `HMAC-SHA256\n${xDate}\n${credentialScope}\n${canonicalRequestHash}`;
+  const stringToSignHash = hashSha256(stringToSign);
   const signature = crypto
     .createHmac("sha256", getSignatureKey(secretKey, shortDate, REGION, SERVICE))
     .update(stringToSign)
     .digest("hex");
   const authorization = `HMAC-SHA256 Credential=${accessKey}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`;
-  return { authorization, xDate, payloadHash };
+  return {
+    authorization,
+    xDate,
+    payloadHash,
+    signatureHash: hashSha256(signature),
+    canonicalRequestHash,
+    stringToSignHash,
+  };
 }
 
 async function readBody(req: IncomingMessage) {
@@ -74,6 +83,7 @@ export default async function handler(req: IncomingMessage & { method?: string }
     res.end("Method Not Allowed");
     return;
   }
+  const debugFlag = req.url?.includes("debug=1");
 
   const accessKey =
     getEnv("VITE_JIMENG_ACCESS_KEY") ||
@@ -130,7 +140,18 @@ export default async function handler(req: IncomingMessage & { method?: string }
   if (!submitResponse.ok) {
     res.statusCode = submitResponse.status;
     res.setHeader("Content-Type", "application/json");
-    res.end(submitText);
+    if (debugFlag) {
+      res.end(
+        JSON.stringify({
+          error: submitText,
+          signature_hash: submitSig.signatureHash,
+          canonical_request_hash: submitSig.canonicalRequestHash,
+          string_to_sign_hash: submitSig.stringToSignHash,
+        })
+      );
+    } else {
+      res.end(submitText);
+    }
     return;
   }
 
@@ -187,7 +208,18 @@ export default async function handler(req: IncomingMessage & { method?: string }
       }
       res.statusCode = 500;
       res.setHeader("Content-Type", "application/json");
-      res.end(resultText || JSON.stringify({ error: { message: "Empty result" } }));
+      if (debugFlag) {
+        res.end(
+          JSON.stringify({
+            error: resultText || "Empty result",
+            signature_hash: resultSig.signatureHash,
+            canonical_request_hash: resultSig.canonicalRequestHash,
+            string_to_sign_hash: resultSig.stringToSignHash,
+          })
+        );
+      } else {
+        res.end(resultText || JSON.stringify({ error: { message: "Empty result" } }));
+      }
       return;
     }
     if (status === "expired" || status === "not_found") {
@@ -201,5 +233,14 @@ export default async function handler(req: IncomingMessage & { method?: string }
 
   res.statusCode = 504;
   res.setHeader("Content-Type", "application/json");
-  res.end(JSON.stringify({ error: { message: "Jimeng timeout" } }));
+  res.end(
+    JSON.stringify({
+      error: { message: "Jimeng timeout" },
+      ...(debugFlag
+        ? {
+            signature_hash: "timeout",
+          }
+        : {}),
+    })
+  );
 }
