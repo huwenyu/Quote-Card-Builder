@@ -13,8 +13,8 @@ const initialContent: PosterContent = {
   description: "",
 };
 
-const createPortraitPrompt = (name: string, mood: string) =>
-  `A high-definition, realistic chest-up close-up portrait of ${name}, with a ${mood} expression. Camera is slightly closer for stronger visual impact; head-and-shoulders framing with the face larger in frame. Camera angle: 15-degree left profile (subject turned 15 degrees to their left), natural three-quarter view, not frontal. The subject is fully clothed, wearing attire that matches the person’s commonly recognized public image (era-appropriate and profession-appropriate). No bare shoulders, no exposed chest, no bare skin below the neck. The clothing is clearly visible. Cinematic studio lighting, Rembrandt lighting on the face, high contrast. 8k resolution, clean and sophisticated aesthetic. The subject must match ${name} and not be a cartoon, robot, signage, poster, or text-only image.`;
+const createPortraitPrompt = (name: string) =>
+  `一张高清晰度、逼真的${name}特写肖像。相机距离稍近，以增强视觉冲击力；采用头肩构图，脸部在画面中占据较大比例。相机角度：左15度侧面（拍摄对象向左转15度），自然四分之三视角，非正面。拍摄对象衣着完整，穿着与其公认的公众形象相匹配的服装（符合时代背景和职业特点）。无裸露肩膀、无裸露胸部、颈部以下无裸露皮肤。衣物清晰可见。采用电影级工作室灯光，脸部采用伦勃朗式光线，高对比度。8K分辨率，画面干净且具有精致美感。拍摄对象必须与${name}相符，不得是卡通、机器人、标识、海报或纯文字图像。`;
 
 const createInitialPortraitUrl = (prompt: string) => {
   const encodedPrompt = encodeURIComponent(prompt);
@@ -37,7 +37,7 @@ export default function Home() {
   const exportRef = useRef<HTMLDivElement | null>(null);
   const [isExporting, setIsExporting] = useState(false);
   const [portraitUrl, setPortraitUrl] = useState<string>(() =>
-    createInitialPortraitUrl(createPortraitPrompt(initialContent.name, "calm"))
+    createInitialPortraitUrl(createPortraitPrompt(initialContent.name))
   );
   const [exportPortraitUrl, setExportPortraitUrl] = useState<string | null>(null);
   const [errors, setErrors] = useState<{ name?: string; quote?: string; export?: string }>({});
@@ -125,8 +125,7 @@ export default function Home() {
 
     try {
       const name = content.name.trim();
-      const mood = "calm";
-      const prompt = createPortraitPrompt(name, mood);
+      const prompt = createPortraitPrompt(name);
       
       const newPortraitUrl = await generatePortrait(prompt);
       setPortraitUrl(newPortraitUrl);
