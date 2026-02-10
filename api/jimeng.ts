@@ -1,13 +1,13 @@
 import type { IncomingMessage, ServerResponse } from "http";
 import * as crypto from "node:crypto";
 
-const HOST = "visual.volcengineapi.com";
-const REGION = "cn-north-1";
-const SERVICE = "cv";
-
 function getEnv(name: string) {
   return process.env[name] || "";
 }
+
+const HOST = getEnv("VOLC_HOST") || getEnv("JIMENG_HOST") || "visual.volcengineapi.com";
+const REGION = getEnv("VOLC_REGION") || getEnv("JIMENG_REGION") || "cn-north-1";
+const SERVICE = (getEnv("VOLC_SERVICE") || getEnv("JIMENG_SERVICE") || "cv").toLowerCase();
 
 function hashSha256(value: string) {
   return crypto.createHash("sha256").update(value).digest("hex");
@@ -75,8 +75,15 @@ export default async function handler(req: IncomingMessage & { method?: string }
     return;
   }
 
-  const accessKey = getEnv("VITE_JIMENG_ACCESS_KEY") || getEnv("JIMENG_ACCESS_KEY");
-  const secretKey = getEnv("VITE_JIMENG_SECRET_KEY") || getEnv("JIMENG_SECRET_KEY");
+  const accessKey =
+    getEnv("VITE_JIMENG_ACCESS_KEY") ||
+    getEnv("JIMENG_ACCESS_KEY") ||
+    getEnv("VOLC_ACCESS_KEY") ||
+    getEnv("VOLC_ACCESS_KEY_ID");
+  const secretKey =
+    getEnv("VITE_JIMENG_SECRET_KEY") ||
+    getEnv("JIMENG_SECRET_KEY") ||
+    getEnv("VOLC_SECRET_ACCESS_KEY");
   if (!accessKey || !secretKey) {
     res.statusCode = 500;
     res.setHeader("Content-Type", "application/json");
