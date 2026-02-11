@@ -177,15 +177,23 @@ export default function QuotePosterPreview({
           </div>
         </div>
 
-        <div className="relative h-full w-full overflow-hidden bg-black">
-          {portraitUrl && (
-            <img
-              src={portraitUrl}
-              alt={name.length > 0 ? name : "Portrait"}
-              className="h-full w-full object-cover opacity-75"
-            />
-          )}
-          <div className="absolute inset-0 bg-gradient-to-l from-black/10 via-black/35 to-black/80" />
+        <div className="relative h-full w-full overflow-hidden">
+          <div 
+            className="h-full w-full"
+            style={{
+              maskImage: 'linear-gradient(to right, transparent 0%, black 20%, black 100%)',
+              WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 20%, black 100%)'
+            }}
+          >
+            {portraitUrl && (
+              <img
+                src={portraitUrl}
+                alt={name.length > 0 ? name : "Portrait"}
+                className="h-full w-full object-cover opacity-75"
+              />
+            )}
+            <div className="absolute inset-0 bg-gradient-to-l from-black/10 via-black/35 to-black/80" />
+          </div>
         </div>
       </div>
     </div>

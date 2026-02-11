@@ -155,6 +155,35 @@ export default function Home() {
               {/* 边框容器：负责裁剪溢出的光效，并提供圆角 */}
               <div className={`relative z-0 overflow-hidden rounded-[14px] sm:rounded-[18px] transition-all duration-500 ${isGeneratingPortrait ? "p-[3px]" : "p-0"}`}>
                 
+                {/* 弥散光效层 - 仅在生成时显示 */}
+                <div 
+                  className={`absolute inset-0 -z-20 transition-opacity duration-500 ${isGeneratingPortrait ? "opacity-60" : "opacity-0"}`}
+                  style={{ filter: "blur(20px)" }}
+                >
+                  <div className="absolute left-1/2 top-1/2 h-[300%] w-[300%] -translate-x-1/2 -translate-y-1/2">
+                    <div
+                      className="h-full w-full"
+                      style={{
+                        background: `
+                          radial-gradient(circle, #dd7bbb 10%, #dd7bbb00 20%), 
+                          radial-gradient(circle at 40% 40%, #d79f1e 5%, #d79f1e00 15%), 
+                          radial-gradient(circle at 60% 60%, #5a922c 10%, #5a922c00 20%), 
+                          radial-gradient(circle at 40% 60%, #4c7894 10%, #4c789400 20%), 
+                          repeating-conic-gradient( 
+                            from 236.84deg at 50% 50%, 
+                            #dd7bbb 0%, 
+                            #d79f1e 25%, 
+                            #5a922c 50%, 
+                            #4c7894 75%, 
+                            #dd7bbb 100% 
+                          )
+                        `,
+                        animation: "spin 2s linear infinite",
+                      }}
+                    />
+                  </div>
+                </div>
+
                 {/* 旋转的光效背景 - 尺寸放大以覆盖旋转时的对角线 */}
                 <div className={`absolute left-1/2 top-1/2 -z-10 h-[300%] w-[300%] -translate-x-1/2 -translate-y-1/2 transition-opacity duration-500 ${isGeneratingPortrait ? "opacity-100" : "opacity-0"}`}>
                   <div
@@ -186,6 +215,15 @@ export default function Home() {
                     portraitUrl={portraitUrl}
                     isGeneratingPortrait={isGeneratingPortrait}
                   />
+                  {/* 扫描线动画 */}
+                  {isGeneratingPortrait && (
+                    <div className="pointer-events-none absolute inset-0 z-20 overflow-hidden rounded-xl sm:rounded-2xl">
+                      <div 
+                        className="h-[50%] w-full bg-gradient-to-b from-transparent via-white/10 to-transparent"
+                        style={{ animation: 'scan 2.5s linear infinite' }}
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

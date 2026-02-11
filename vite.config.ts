@@ -76,18 +76,25 @@ export default defineConfig(({ mode }) => {
               body = {};
             }
 
-            const response = await fetch(apiUrl, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'x-goog-api-key': apiKey,
-              },
-              body: JSON.stringify(body),
-            });
-            const responseText = await response.text();
-            res.statusCode = response.status;
-            res.setHeader('Content-Type', response.headers.get('content-type') || 'application/json');
-            res.end(responseText);
+            try {
+              const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'x-goog-api-key': apiKey,
+                },
+                body: JSON.stringify(body),
+              });
+              const responseText = await response.text();
+              res.statusCode = response.status;
+              res.setHeader('Content-Type', response.headers.get('content-type') || 'application/json');
+              res.end(responseText);
+            } catch (error) {
+              console.error('Imagen Proxy Error:', error);
+              res.statusCode = 500;
+              res.setHeader('Content-Type', 'application/json');
+              res.end(JSON.stringify({ error: { message: 'Upstream connection failed' } }));
+            }
           });
           server.middlewares.use('/api/image', async (req, res) => {
             const url = typeof req.url === 'string' ? new URL(req.url, 'http://localhost') : null;

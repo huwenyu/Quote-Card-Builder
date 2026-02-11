@@ -1,33 +1,40 @@
 export async function generatePortrait(prompt: string): Promise<string> {
-  const response = await fetch("/api/imagen", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      contents: [
-        {
-          parts: [{ text: prompt }],
-        },
-      ],
-      generationConfig: {
-        responseModalities: ["TEXT", "IMAGE"],
-        imageConfig: {
-          aspectRatio: "3:4",
-        },
+  let response: Response | null = null;
+  try {
+    response = await fetch("/api/imagen", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
       },
-    }),
-  });
+      body: JSON.stringify({
+        contents: [
+          {
+            parts: [{ text: prompt }],
+          },
+        ],
+        generationConfig: {
+          responseModalities: ["TEXT", "IMAGE"],
+          imageConfig: {
+            aspectRatio: "3:4",
+          },
+        },
+      }),
+    });
+  } catch (e) {
+    console.warn("Imagen API failed to fetch, trying fallback...", e);
+  }
 
-  if (!response.ok) {
-    const errorText = await response.text();
+  if (!response || !response.ok) {
+    const errorText = response ? await response.text() : "Network Error";
     const shouldFallback =
+      !response ||
       response.status === 429 ||
       response.status === 401 ||
       response.status === 403 ||
       response.status >= 500;
+
     if (!shouldFallback) {
-      throw new Error(`API 调用失败: ${response.status} ${response.statusText} ${errorText}`);
+      throw new Error(`API 调用失败: ${response?.status} ${response?.statusText} ${errorText}`);
     }
 
     try {
