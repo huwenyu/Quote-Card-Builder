@@ -26,6 +26,7 @@ type QuoteInputPanelProps = {
   onChange: (next: PosterContent) => void;
   onDownload: () => void | Promise<void>;
   onGeneratePortrait?: () => void | Promise<void>;
+  isGeneratingPortrait: boolean;
   isExporting: boolean;
   errors?: { name?: string; quote?: string; export?: string };
 };
@@ -36,6 +37,7 @@ export default function Home() {
   const [content, setContent] = useState<PosterContent>(initialContent);
   const exportRef = useRef<HTMLDivElement | null>(null);
   const [isExporting, setIsExporting] = useState(false);
+  const [isGeneratingPortrait, setIsGeneratingPortrait] = useState(false);
   const [portraitUrl, setPortraitUrl] = useState<string>(() =>
     createInitialPortraitUrl(createPortraitPrompt(initialContent.name))
   );
@@ -123,6 +125,7 @@ export default function Home() {
   const handleGeneratePortrait = async () => {
     if (!content.name.trim()) return;
 
+    setIsGeneratingPortrait(true);
     try {
       const name = content.name.trim();
       const prompt = createPortraitPrompt(name);
@@ -132,6 +135,8 @@ export default function Home() {
     } catch (error: any) {
       console.error("Failed to generate portrait:", error);
       alert(`肖像生成失败: ${error.message || "未知错误"}`);
+    } finally {
+      setIsGeneratingPortrait(false);
     }
   };
 
@@ -146,14 +151,50 @@ export default function Home() {
         <div className="flex flex-col items-center gap-5 sm:gap-6">
           <section className="w-full max-w-[640px] rounded-xl border border-zinc-200/80 bg-white p-4 shadow-sm sm:p-6">
             <div className="text-sm font-medium text-zinc-600">实时预览</div>
-            <div className="mt-4 sm:mt-5">
-              <QuotePosterPreview content={content} portraitUrl={portraitUrl} />
+            <div className="relative mt-4 sm:mt-5">
+              {/* 边框容器：负责裁剪溢出的光效，并提供圆角 */}
+              <div className={`relative z-0 overflow-hidden rounded-[14px] sm:rounded-[18px] transition-all duration-500 ${isGeneratingPortrait ? "p-[3px]" : "p-0"}`}>
+                
+                {/* 旋转的光效背景 - 尺寸放大以覆盖旋转时的对角线 */}
+                <div className={`absolute left-1/2 top-1/2 -z-10 h-[300%] w-[300%] -translate-x-1/2 -translate-y-1/2 transition-opacity duration-500 ${isGeneratingPortrait ? "opacity-100" : "opacity-0"}`}>
+                  <div
+                    className="h-full w-full"
+                    style={{
+                      background: `
+                        radial-gradient(circle, #dd7bbb 10%, #dd7bbb00 20%), 
+                        radial-gradient(circle at 40% 40%, #d79f1e 5%, #d79f1e00 15%), 
+                        radial-gradient(circle at 60% 60%, #5a922c 10%, #5a922c00 20%), 
+                        radial-gradient(circle at 40% 60%, #4c7894 10%, #4c789400 20%), 
+                        repeating-conic-gradient( 
+                          from 236.84deg at 50% 50%, 
+                          #dd7bbb 0%, 
+                          #d79f1e 25%, 
+                          #5a922c 50%, 
+                          #4c7894 75%, 
+                          #dd7bbb 100% 
+                        )
+                      `,
+                      animation: "spin 2s linear infinite",
+                    }}
+                  />
+                </div>
+
+                {/* 卡片主体 - 位于光效之上 */}
+                <div className="relative z-10">
+                  <QuotePosterPreview
+                    content={content}
+                    portraitUrl={portraitUrl}
+                    isGeneratingPortrait={isGeneratingPortrait}
+                  />
+                </div>
+              </div>
             </div>
           </section>
 
           <QuoteInputPanelTyped
             content={content}
             errors={errors}
+            isGeneratingPortrait={isGeneratingPortrait}
             isExporting={isExporting}
             onChange={(next) => {
               setContent(next);
@@ -167,7 +208,11 @@ export default function Home() {
 
       <div className="fixed left-[-10000px] top-0">
         <div ref={exportRef} style={{ width: 1200 }}>
-          <QuotePosterPreview content={content} portraitUrl={exportPortraitUrl ?? portraitUrl} />
+          <QuotePosterPreview
+            content={content}
+            portraitUrl={exportPortraitUrl ?? portraitUrl}
+            isGeneratingPortrait={false}
+          />
         </div>
       </div>
     </main>

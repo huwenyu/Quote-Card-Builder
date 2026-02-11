@@ -8,9 +8,11 @@ function normalizeMultilineText(value: string) {
 export default function QuotePosterPreview({
   content,
   portraitUrl,
+  isGeneratingPortrait = false,
 }: {
   content: PosterContent;
   portraitUrl?: string;
+  isGeneratingPortrait?: boolean;
 }) {
   const quote = normalizeMultilineText(content.quote);
   const name = content.name.trim();
@@ -123,9 +125,11 @@ export default function QuotePosterPreview({
 
   const authorSize = Math.max(11, Math.min(14, fontSize * 0.32));
   const descSize = Math.max(10, Math.min(12, fontSize * 0.27));
-
   return (
-    <div className="relative aspect-video w-full overflow-hidden rounded-xl bg-black shadow-[0_18px_60px_rgba(0,0,0,0.35)] sm:rounded-2xl">
+    <div
+      className="relative aspect-video w-full overflow-hidden rounded-xl bg-black transition-shadow duration-300 shadow-[0_18px_60px_rgba(0,0,0,0.35)] sm:rounded-2xl"
+    >
+
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_30%,rgba(255,255,255,0.06),transparent_55%),radial-gradient(circle_at_80%_70%,rgba(255,255,255,0.04),transparent_55%)]" />
 
       <div className="absolute inset-0 grid grid-cols-[1.15fr_0.85fr]">

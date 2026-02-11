@@ -6,6 +6,7 @@ type Props = {
   onChange: (next: PosterContent) => void;
   onDownload: () => void | Promise<void>;
   onGeneratePortrait?: () => void | Promise<void>;
+  isGeneratingPortrait: boolean;
   isExporting: boolean;
   errors?: { name?: string; quote?: string; export?: string };
 };
@@ -15,11 +16,11 @@ export default function QuoteInputPanel({
   onChange,
   onDownload,
   onGeneratePortrait,
+  isGeneratingPortrait,
   isExporting,
   errors,
 }: Props) {
   const [showHint, setShowHint] = useState(false);
-  const [isGeneratingPortrait, setIsGeneratingPortrait] = useState(false);
   const [isNameOpen, setIsNameOpen] = useState(false);
   const [isFilteringNames, setIsFilteringNames] = useState(false);
   const namePresets = ["Albert Einstein", "Bruce Lee", "Steve Jobs", "鲁迅"];
@@ -36,12 +37,7 @@ export default function QuoteInputPanel({
 
   const handleGeneratePortrait = async () => {
     if (!onGeneratePortrait || !content.name.trim()) return;
-    setIsGeneratingPortrait(true);
-    try {
-      await onGeneratePortrait();
-    } finally {
-      setIsGeneratingPortrait(false);
-    }
+    await onGeneratePortrait();
   };
 
   return (
