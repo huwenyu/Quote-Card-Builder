@@ -135,7 +135,7 @@ export default function QuotePosterPreview({
       <div className="absolute inset-0 grid grid-cols-[1.15fr_0.85fr]">
         <div
           ref={containerRef}
-          className="flex h-full items-center justify-center overflow-hidden p-4 sm:p-6"
+          className="flex h-full items-center justify-center overflow-hidden pl-4 py-4 pr-0 sm:pl-6 sm:py-6 sm:pr-0"
         >
           <div
             ref={textRef}
