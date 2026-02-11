@@ -216,14 +216,17 @@ export default function Home() {
                     isGeneratingPortrait={isGeneratingPortrait}
                   />
                   {/* 扫描线动画 */}
-                  {isGeneratingPortrait && (
-                    <div className="pointer-events-none absolute inset-0 z-20 overflow-hidden rounded-xl sm:rounded-2xl">
-                      <div 
-                        className="h-[50%] w-full bg-gradient-to-b from-transparent via-white/10 to-transparent"
-                        style={{ animation: 'scan 2.5s linear infinite' }}
-                      />
-                    </div>
-                  )}
+                    {isGeneratingPortrait && (
+                      <div className="pointer-events-none absolute inset-0 z-20 overflow-hidden rounded-xl sm:rounded-2xl">
+                        <div 
+                          className="h-[80%] w-full"
+                          style={{ 
+                            background: 'linear-gradient(to bottom, transparent, rgba(255, 255, 255, 0.15) 50%, transparent)',
+                            animation: 'scan 2.5s linear infinite' 
+                          }}
+                        />
+                      </div>
+                    )}
                 </div>
               </div>
             </div>
