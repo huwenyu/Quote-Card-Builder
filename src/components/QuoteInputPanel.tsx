@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { PosterContent } from "@/types/poster";
+import { generateQuote } from "@/services/deepseek";
 
 type Props = {
   content: PosterContent;
@@ -23,6 +24,7 @@ export default function QuoteInputPanel({
   const [showHint, setShowHint] = useState(false);
   const [isNameOpen, setIsNameOpen] = useState(false);
   const [isFilteringNames, setIsFilteringNames] = useState(false);
+  const [isGeneratingQuote, setIsGeneratingQuote] = useState(false);
   const namePresets = ["Albert Einstein", "Bruce Lee", "Steve Jobs", "鲁迅"];
   const normalizedName = content.name.trim().toLowerCase();
   const filteredPresets =
@@ -69,6 +71,13 @@ export default function QuoteInputPanel({
               onBlur={() => {
                 setShowHint(false);
                 setTimeout(() => setIsNameOpen(false), 120);
+                if (content.name.trim()) {
+                  setIsGeneratingQuote(true);
+                  generateQuote(content.name)
+                    .then((quote) => onChange({ ...content, quote }))
+                    .catch((error) => console.error("Failed to generate quote:", error))
+                    .finally(() => setIsGeneratingQuote(false));
+                }
               }}
               aria-invalid={Boolean(errors?.name)}
               aria-describedby={errors?.name ? "name-error" : undefined}
@@ -84,6 +93,11 @@ export default function QuoteInputPanel({
                       e.preventDefault();
                       onChange({ ...content, name: preset });
                       setIsNameOpen(false);
+                      setIsGeneratingQuote(true);
+                      generateQuote(preset)
+                        .then((quote) => onChange({ ...content, name: preset, quote }))
+                        .catch((error) => console.error("Failed to generate quote:", error))
+                        .finally(() => setIsGeneratingQuote(false));
                     }}
                     className="flex w-full items-center px-3 py-2 text-left text-sm text-zinc-900 hover:bg-zinc-50"
                   >
@@ -115,11 +129,12 @@ export default function QuoteInputPanel({
             required
             value={content.quote}
             maxLength={500}
-            placeholder="请输入名言内容…"
+            placeholder={isGeneratingQuote ? "正在生成名言..." : "请输入名言内容…"}
             rows={7}
             onChange={(e) => onChange({ ...content, quote: e.target.value })}
             aria-invalid={Boolean(errors?.quote)}
             aria-describedby={errors?.quote ? "quote-error" : undefined}
+            disabled={isGeneratingQuote}
             className="w-full resize-none rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm text-zinc-900 outline-none transition placeholder:text-zinc-400 focus-visible:ring-2 focus-visible:ring-zinc-950/10 focus-visible:ring-offset-2 focus-visible:ring-offset-white disabled:cursor-not-allowed disabled:opacity-50"
           />
           {errors?.quote && (

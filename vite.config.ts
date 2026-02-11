@@ -22,6 +22,7 @@ export default defineConfig(({ mode }) => {
     env.VOLC_IMAGE_MODEL ||
     'doubao-seedream-4-5-251128';
   const arkImageSize = env.ARK_IMAGE_SIZE || env.VOLC_IMAGE_SIZE || '2K';
+  const deepseekApiKey = env.DEEPSEEK_API_KEY;
 
   return {
     build: {
@@ -48,6 +49,54 @@ export default defineConfig(({ mode }) => {
       {
         name: 'imagen-proxy',
         configureServer(server) {
+          server.middlewares.use('/api/deepseek', async (req, res) => {
+            if (req.method !== 'POST') {
+              res.statusCode = 405;
+              res.end('Method Not Allowed');
+              return;
+            }
+            if (!deepseekApiKey) {
+              res.statusCode = 500;
+              res.setHeader('Content-Type', 'application/json');
+              res.end(JSON.stringify({ error: { message: 'Missing DeepSeek API key' } }));
+              return;
+            }
+
+            const chunks: Uint8Array[] = [];
+            await new Promise<void>((resolve) => {
+              req.on('data', (chunk) => {
+                chunks.push(chunk);
+              });
+              req.on('end', () => resolve());
+            });
+            const bodyText = Buffer.concat(chunks).toString('utf-8');
+            let body: unknown;
+            try {
+              body = bodyText ? JSON.parse(bodyText) : {};
+            } catch {
+              body = {};
+            }
+
+            try {
+              const response = await fetch('https://api.deepseek.com/chat/completions', {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'Authorization': `Bearer ${deepseekApiKey}`,
+                },
+                body: JSON.stringify(body),
+              });
+              const responseText = await response.text();
+              res.statusCode = response.status;
+              res.setHeader('Content-Type', response.headers.get('content-type') || 'application/json');
+              res.end(responseText);
+            } catch (error) {
+              console.error('DeepSeek Proxy Error:', error);
+              res.statusCode = 500;
+              res.setHeader('Content-Type', 'application/json');
+              res.end(JSON.stringify({ error: { message: 'Upstream connection failed' } }));
+            }
+          });
           server.middlewares.use('/api/imagen', async (req, res) => {
             if (req.method !== 'POST') {
               res.statusCode = 405;
