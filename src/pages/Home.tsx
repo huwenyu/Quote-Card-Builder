@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { toPng } from "html-to-image";
 import QuoteInputPanel from "../components/QuoteInputPanel";
 import QuotePosterPreview from "@/components/QuotePosterPreview";
+import FeedbackWidget from "@/components/FeedbackWidget";
 import type { PosterContent } from "@/types/poster";
 import { createPosterFilename, validatePosterContent } from "@/utils/posterExport";
 import { generatePortrait } from "@/services/nanoBanana";
@@ -256,6 +257,7 @@ export default function Home() {
           />
         </div>
       </div>
+      <FeedbackWidget />
     </main>
   );
 }
